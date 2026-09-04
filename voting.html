@@ -13,54 +13,25 @@
 <header class="topbar"><nav class="nav"><button class="brand" onclick="location.href='index.html'">Pulse <span>Help</span></button><a class="back" href="index.html">Back to Help Center</a></nav></header>
 <main>
 <section class="hero"><div class="eyebrow">Community vote</div><h1>Help rename Pulse.</h1><p>Pulse may be getting a new name. Choose the name you think fits the app best.</p></section>
-<div class="wrap">
-<section class="vote-card" aria-labelledby="vote-title">
-<h2 id="vote-title">Which name should we choose?</h2>
-<p class="sub">Pick one option. You must be signed in to your Pulse account to vote.</p>
-<form id="voteForm">
-<div class="options" id="options"></div>
-<button class="vote-btn" id="voteBtn" type="submit" disabled>Cast my vote</button>
-</form>
-<div class="message" id="message"></div>
-<div class="results" id="results" hidden>
-<h2>Current results</h2>
-<p class="sub">Live community results from Pulse.</p>
-<div id="resultList"></div>
-</div>
+<div class="wrap"><section class="vote-card" aria-labelledby="vote-title">
+<h2 id="vote-title">Which name should we choose?</h2><p class="sub">Pick one option. You must be signed in to your Pulse account to vote.</p>
+<form id="voteForm"><div class="options" id="options"></div><button class="vote-btn" id="voteBtn" type="submit" disabled>Cast my vote</button></form>
+<div class="message" id="message"></div><div class="results" id="results" hidden><h2>Current results</h2><p class="sub">Live community results from Pulse.</p><div id="resultList"></div></div>
 <div class="note"><strong>One vote per Pulse account.</strong> Your vote is stored securely in the Pulse Supabase database.</div>
-</section>
-</div>
-</main>
+</section></div></main>
 <footer class="footer"><div class="footerin"><div>© 2026 Pulse Help</div><div><a href="index.html">Help Center</a> · <a href="report.html">Report a problem</a></div></div></footer>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
 const SUPABASE_URL='https://lbphvoonoxpbvpovozuo.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY='REPLACE_WITH_PUBLISHABLE_KEY';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_cd4ByWLUbtuQw0H6e7InWg_6q6KUB2Z';
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-
-const candidates=[
-  {id:'pulse',name:'Keep Pulse'},
-  {id:'omiro',name:'Omiro'},
-  {id:'avelo',name:'Avelo'},
-  {id:'other',name:'Another name'}
-];
-const options=document.getElementById('options');
-const voteBtn=document.getElementById('voteBtn');
-const form=document.getElementById('voteForm');
-const message=document.getElementById('message');
-const results=document.getElementById('results');
-const resultList=document.getElementById('resultList');
-let signedIn=false;
-let hasVoted=false;
-
+const candidates=[{id:'pulse',name:'Keep Pulse'},{id:'omiro',name:'Omiro'},{id:'avelo',name:'Avelo'},{id:'other',name:'Another name'}];
+const options=document.getElementById('options'),voteBtn=document.getElementById('voteBtn'),form=document.getElementById('voteForm'),message=document.getElementById('message'),results=document.getElementById('results'),resultList=document.getElementById('resultList');let signedIn=false,hasVoted=false;
 function showMessage(text,error=false){message.textContent=text;message.style.display='block';message.style.background=error?'#fff1f0':'#eef7ee';message.style.color=error?'#a11':'#267326'}
-function renderOptions(){options.innerHTML=candidates.map(c=>`<div class="option"><input type="radio" name="name" id="${c.id}" value="${c.id}"><label for="${c.id}"><span class="name">${c.name}</span><span class="check"></span></label></div>`).join('');options.querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{voteBtn.disabled=!signedIn||hasVoted}));}
-function renderResults(rows){const total=rows.reduce((n,r)=>n+Number(r.votes||0),0);resultList.innerHTML=candidates.map(c=>{const row=rows.find(r=>r.candidate===c.id);const n=Number(row?.votes||0);const pct=total?Math.round(n/total*100):0;return `<div class="result"><div class="result-head"><span>${c.name}</span><span>${n} vote${n===1?'':'s'} · ${pct}%</span></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></div>`}).join('');results.hidden=false;}
+function renderOptions(){options.innerHTML=candidates.map(c=>`<div class="option"><input type="radio" name="name" id="${c.id}" value="${c.id}"><label for="${c.id}"><span class="name">${c.name}</span><span class="check"></span></label></div>`).join('');options.querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>voteBtn.disabled=!signedIn||hasVoted))}
+function renderResults(rows){const total=rows.reduce((n,r)=>n+Number(r.votes||0),0);resultList.innerHTML=candidates.map(c=>{const row=rows.find(r=>r.candidate===c.id),n=Number(row?.votes||0),pct=total?Math.round(n/total*100):0;return `<div class="result"><div class="result-head"><span>${c.name}</span><span>${n} vote${n===1?'':'s'} · ${pct}%</span></div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></div>`}).join('');results.hidden=false}
 async function loadResults(){const {data,error}=await supabase.from('pulse_name_vote_results').select('candidate,votes');if(error){console.error(error);return}renderResults(data||[])}
-async function init(){renderOptions();const {data:{session}}=await supabase.auth.getSession();signedIn=!!session;if(!signedIn){voteBtn.disabled=true;showMessage('Please sign in to your Pulse account before voting.',true);await loadResults();return}const {data:own,error}=await supabase.from('pulse_name_votes').select('candidate').eq('voter_id',session.user.id).maybeSingle();if(error){console.error(error)}hasVoted=!!own;options.querySelectorAll('input').forEach(i=>i.disabled=hasVoted);voteBtn.disabled=hasVoted;if(hasVoted){const selected=document.getElementById(own.candidate);if(selected)selected.checked=true;showMessage('You have already voted. Thanks for participating.')}await loadResults();}
-form.addEventListener('submit',async e=>{e.preventDefault();if(!signedIn){showMessage('Please sign in to vote.',true);return}if(hasVoted){showMessage('You have already voted.');return}const selected=new FormData(form).get('name');if(!selected)return;voteBtn.disabled=true;const {error}=await supabase.rpc('cast_pulse_name_vote',{p_candidate:selected});if(error){console.error(error);voteBtn.disabled=false;if(error.message.includes('duplicate'))showMessage('You have already voted.',true);else showMessage('Could not record your vote. Please try again.',true);return}hasVoted=true;options.querySelectorAll('input').forEach(i=>i.disabled=true);showMessage('Thanks! Your vote has been recorded.');await loadResults();});
+async function init(){renderOptions();const {data:{session}}=await supabase.auth.getSession();signedIn=!!session;if(!signedIn){showMessage('Please sign in to your Pulse account before voting.',true);await loadResults();return}const {data:own,error}=await supabase.from('pulse_name_votes').select('candidate').eq('voter_id',session.user.id).maybeSingle();if(error)console.error(error);hasVoted=!!own;options.querySelectorAll('input').forEach(i=>i.disabled=hasVoted);voteBtn.disabled=hasVoted;if(hasVoted){const selected=document.getElementById(own.candidate);if(selected)selected.checked=true;showMessage('You have already voted. Thanks for participating.')}await loadResults()}
+form.addEventListener('submit',async e=>{e.preventDefault();if(!signedIn){showMessage('Please sign in to vote.',true);return}if(hasVoted){showMessage('You have already voted.');return}const selected=new FormData(form).get('name');if(!selected)return;voteBtn.disabled=true;const {error}=await supabase.rpc('cast_pulse_name_vote',{p_candidate:selected});if(error){console.error(error);voteBtn.disabled=false;showMessage(error.message.includes('duplicate')?'You have already voted.':'Could not record your vote. Please try again.',true);return}hasVoted=true;options.querySelectorAll('input').forEach(i=>i.disabled=true);showMessage('Thanks! Your vote has been recorded.');await loadResults()});
 await init();
-</script>
-</body>
-</html>
+</script></body></html>
